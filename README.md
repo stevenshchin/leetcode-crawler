@@ -3,6 +3,8 @@ LeetCode Progress Tracker
 
 A tool to collect your progress on [LeetCode](https://leetcode.com/). It will generate a report in CSV format (to stdout) which then could be imported into tools such as [Google Sheets](https://docs.google.com/spreadsheets/u/0/) for better tracking.
 
+![Better filtering in Google Sheets](https://user-images.githubusercontent.com/3030082/26870741-d08c8942-4b25-11e7-9b81-7fde8bba5938.png)
+
 It uses [Selenium WebDriver](http://www.seleniumhq.org/projects/webdriver/) to get data / content on [LeetCode](https://leetcode.com/). The main reason for choosing [Selenium WebDriver](http://www.seleniumhq.org/projects/webdriver/) is that it's easier to build and debug for such a tiny project, and performance probably won't never be a concern.
 
 Install
