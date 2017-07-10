@@ -2,6 +2,7 @@ package io.injectorstud.leetcodecrawler;
 
 import com.google.common.collect.ImmutableList;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -17,10 +18,12 @@ import java.util.stream.Collectors;
 class Crawler {
   private WebDriver driver;
   private ProblemSetParser problemSetParser;
+  private WebDriverWait wait;
 
   Crawler(WebDriver driver, ProblemSetParser problemSetParser) {
     this.driver = driver;
     this.problemSetParser = problemSetParser;
+    wait = new WebDriverWait(driver, 5);
   }
 
   void run() {
@@ -66,14 +69,14 @@ class Crawler {
 
   private void dumpProblems() {
     ProblemSet problemSet = getProblemSet();
-    Map<String, List<String>> problemKeysByTag = getGroupedProblemKeys("glyphicon glyphicon-tags");
+    Map<String, List<String>> problemKeysByTag = getGroupedByTagProblemKeys();
 
     problemSet.populateTags(problemKeysByTag);
 
     List<String> companies = new ArrayList<>();
 
     if (problemSet.isPaid()) {
-      Map<String, List<String>> problemKeysByCompany = getGroupedProblemKeys("fa fa-building");
+      Map<String, List<String>> problemKeysByCompany = getGroupedByCompanyProblemKeys();
 
       problemSet.populateCompanies(problemKeysByCompany);
       companies.addAll(problemKeysByCompany.keySet());
@@ -119,54 +122,44 @@ class Crawler {
   }
 
   private ProblemSet getProblemSet() {
-    List<String> categoryLinks = getProblemCategoryLinks();
-    ProblemSet result = null;
-
-    for (String categoryLink : categoryLinks) {
-      ensurePage("https://leetcode.com/api/problems/" + categoryLink);
-      String content = driver.findElement(By.tagName("body")).getText();
-      ProblemSet problemSet = problemSetParser.getProblemSet(content);
-
-      result = mergeProblemSet(result, problemSet);
-    }
+    ensurePage("https://leetcode.com/api/problems/all");
+    String content = driver.findElement(By.tagName("body")).getText();
+    ProblemSet result = problemSetParser.getProblemSet(content);
 
     return result;
   }
 
-  private ProblemSet mergeProblemSet(ProblemSet set1, ProblemSet set2) {
-    if (set1 == null) {
-      return set2;
-    }
+  private Map<String, List<String>> getGroupedByCompanyProblemKeys() {
+    ensurePage("https://leetcode.com/problemset/all/");
+    driver.findElement(By.cssSelector("#expand-companies .btn")).click();
 
-    if (set2 == null) {
-      return set1;
-    }
-
-    set1.getProblems().putAll(set2.getProblems());
-
-    return set1;
-  }
-
-  private List<String> getProblemCategoryLinks() {
-    ensurePage("https://leetcode.com/");
-    List<WebElement> links = driver.findElements(By.cssSelector(".navbar .problems-menu .dropdown-menu a"));
-
-    return links.stream()
-        .map(l -> l.getAttribute("href"))
-        .filter(h -> h.startsWith("https://leetcode.com/problemset/"))
-        .map(h -> h.replaceFirst("https://leetcode.com/problemset/", ""))
-        .collect(Collectors.toList());
-  }
-
-  private Map<String, List<String>> getGroupedProblemKeys(String sectionIdentify) {
-    ensurePage("https://leetcode.com/problemset/algorithms/");
-
-    WebElement sidebar = driver.findElement(By.cssSelector(".blog-sidebar"));
-
-    List<WebElement> links =
-        sidebar.findElements(By.xpath("//ul[@class='list-group' and .//@class='" + sectionIdentify + "']/a"));
+    List<WebElement> links = driver.findElements(By.cssSelector("#current-company-tags a"));
     List<SidebarItem> items = links.stream()
-        .map(we -> new SidebarItem(we.findElement(By.tagName("small")).getText(), we.getAttribute("href")))
+        .map(we -> new SidebarItem(we.findElement(By.tagName("span")).getText(), we.getAttribute("href")))
+        .collect(Collectors.toList());
+
+    return parseGroupedProblemKeys(items);
+  }
+
+  private Map<String, List<String>> getGroupedByTagProblemKeys() {
+    ensurePage("https://leetcode.com/problemset/all/");
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".filterTags .filter-dropdown-button")));
+    driver.findElement(By.cssSelector(".filterTags .filter-dropdown-button")).click();
+    wait.until(
+        ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector(".filterTags .filter-dropdown-menu-item"), 1));
+
+    List<WebElement> elems = driver.findElements(By.cssSelector(".filterTags .filter-dropdown-menu-item"));
+    List<SidebarItem> items = elems.stream()
+        .map(we -> new SidebarItem(we.getText(), "https://leetcode.com/tag/" + ((JavascriptExecutor) driver)
+            .executeScript("" +
+                    "return (function(elem) { " +
+                    "  for (let p in elem) { " +
+                    "    if (p.indexOf('__reactInternalInstance') == 0) { " +
+                    "      return elem[p]._currentElement.key; " +
+                    "    } " +
+                    "  } " +
+                    "})(arguments[0])",
+                we)))
         .collect(Collectors.toList());
 
     return parseGroupedProblemKeys(items);
