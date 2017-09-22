@@ -131,7 +131,7 @@ class Crawler {
 
   private Map<String, List<String>> getGroupedByCompanyProblemKeys() {
     ensurePage("https://leetcode.com/problemset/all/");
-    driver.findElement(By.cssSelector("#expand-companies .btn")).click();
+    driver.findElement(By.cssSelector("#expand-company > div")).click();
 
     List<WebElement> links = driver.findElements(By.cssSelector("#current-company-tags a"));
     List<SidebarItem> items = links.stream()
@@ -147,8 +147,11 @@ class Crawler {
     driver.findElement(By.cssSelector(".filterTags .filter-dropdown-button")).click();
     wait.until(
         ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector(".filterTags .filter-dropdown-menu-item"), 1));
-
-    List<WebElement> elems = driver.findElements(By.cssSelector(".filterTags .filter-dropdown-menu-item"));
+    driver.findElement(By.cssSelector(".tab-Topics")).click();
+    wait.until(
+        ExpectedConditions.presenceOfElementLocated(By.cssSelector(".tab-Topics.active"))
+    );
+    List<WebElement> elems = driver.findElements(By.cssSelector(".filterTags .false.tag-category.filter-dropdown-menu-items .filter-dropdown-menu-item"));
     List<SidebarItem> items = elems.stream()
         .map(we -> new SidebarItem(we.getText(), "https://leetcode.com/tag/" + ((JavascriptExecutor) driver)
             .executeScript("" +
