@@ -16,7 +16,7 @@ Install
 Run
 ---
 ```
-mvn exec:java -Dexec.mainClass=io.injectorstud.leetcodecrawler.Cl
+mvn exec:java -Dexec.mainClass=io.injectorstud.leetcodecrawler.Cli
 ```
 
 It will launch a Chrome instance and use that to fetch all the data it looks for. It might ask you to log with your [LeetCode](https://leetcode.com/) account when you run it the very first time or when the stored session is expired. The season file (Chrome profile) will locate in `run/chrome/profile/` once it's created.
